@@ -62,11 +62,12 @@ jobs:
       - name: Restart Spring Application on EC2
         run: |
           JAR_FILE=$(basename $(ls build/libs/*.jar | head -n 1))
+          echo "JAR_FILE to be used: $JAR_FILE" # 로그로 JAR_FILE 값을 출력
           ssh -i private_key.pem \
             -o StrictHostKeyChecking=no \
             ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << 'EOF'
             pgrep java | xargs kill -9
-            nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE &
+            nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE > app.log 2>&1 &
           EOF
 
       - name: Cleanup
