@@ -72,7 +72,7 @@ jobs:
       - name: start new app
         run: |
           JAR_FILE=$(basename $(ls build/libs/*.jar | head -n 1))
-          echo "JAR_FILE to be used: $JAR_FILE" # Log the JAR_FILE value
+          echo "Jar path : /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE" 
           ssh -i private_key.pem \
             -o StrictHostKeyChecking=no \
             ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << EOF
