@@ -58,6 +58,10 @@ jobs:
             -o StrictHostKeyChecking=no \
             $JAR_FILE \
             ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}:/home/${{ secrets.AWS_EC2_USER }}/
+          # Set executable permission on the remote server
+          ssh -i private_key.pem \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} "chmod +x /home/${{ secrets.AWS_EC2_USER }}/$(basename $JAR_FILE)"
 
       - name: Restart Spring Application on EC2
         run: |
