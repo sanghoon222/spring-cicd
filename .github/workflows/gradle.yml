@@ -66,18 +66,14 @@ jobs:
           ssh -i private_key.pem \
             -o StrictHostKeyChecking=no \
             ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << EOF
-            pgrep java | xargs kill -9
-            # nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE > app.log 2>&1 &
-          EOF
-      - name: start new app
-        run: |
-          JAR_FILE=$(basename $(ls build/libs/*.jar | head -n 1))
-          echo "Jar path : /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE" 
-          ssh -i private_key.pem \
-            -o StrictHostKeyChecking=no \
-            ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << EOF
+            PID=\$(pgrep java)
+            if [ -n "\$PID" ]; then
+              echo "Killing existing Java process with PID: \$PID"
+              kill -9 \$PID
+            else
+              echo "No Java process found."
+            fi
             nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE > app.log 2>&1 &
           EOF
-
       - name: Cleanup
         run: rm -f private_key.pem
