@@ -27,14 +27,14 @@ jobs:
       - name: Get JAR_FILE
         id: jarfile
         run: |
-          JAR_FILE=$(ls build/libs/*.jar | grep -v plain | head -n 1)
-          echo "JAR_FILE=${JAR_FILE}" >> $GITHUB_ENV
-
+          JAR_FILE=$(ls build/libs/*.jar | head -n 1)
+          echo "JAR_FILE_NAME=$JAR_FILE" >> $GITHUB_ENV
+      
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
           name: app
-          path: ${{ env.JAR_FILE }}
+          path: ${{ env.JAR_FILE_NAME }}
 
   deploy:
     needs: build
@@ -58,10 +58,6 @@ jobs:
             -o StrictHostKeyChecking=no \
             $JAR_FILE \
             ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}:/home/${{ secrets.AWS_EC2_USER }}/
-          # Set executable permission on the remote server
-          ssh -i private_key.pem \
-            -o StrictHostKeyChecking=no \
-            ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} "chmod +x /home/${{ secrets.AWS_EC2_USER }}/$(basename $JAR_FILE)"
 
       - name: Restart Spring Application on EC2
         run: |
@@ -69,17 +65,23 @@ jobs:
           echo "JAR_FILE to be used: $JAR_FILE" # Log the JAR_FILE value
           ssh -i private_key.pem \
             -o StrictHostKeyChecking=no \
-            ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << 'EOF'
+            ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << EOF
             # 종료할 Java 프로세스를 찾고 종료
-            PID=$(pgrep java)
-            if [ -n "$PID" ]; then
-              echo "Killing existing Java process with PID: $PID"
-              kill -9 $PID
+            PID=\$(pgrep -f "java -jar /home/${{ secrets.AWS_EC2_USER }}/")
+            if [ -n "\$PID" ]; then
+              echo "Killing existing Java process with PID: \$PID"
+              kill \$PID
+              sleep 5  # 프로세스가 종료되도록 잠시 대기
             else
               echo "No existing Java process found."
             fi
+
+            # 기존 JAR 파일 삭제 (새로운 JAR 파일은 제외)
+            echo "Deleting old JAR files except for the new one..."
+            find /home/${{ secrets.AWS_EC2_USER }} -maxdepth 1 -type f -name "*.jar" ! -name "$JAR_FILE" -exec rm -f {} +
+
             # 새로운 JAR 파일 실행
-            nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE > app.log 2>&1 &
+            nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/$JAR_FILE > /home/${{ secrets.AWS_EC2_USER }}/app.log 2>&1 &
           EOF
 
       - name: Cleanup
