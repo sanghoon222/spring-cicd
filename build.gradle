@@ -32,6 +32,11 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// 기본 jar 작업을 비활성화하여 plain.jar이 생성되지 않도록 설정
+jar {
+    enabled = false
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 }
