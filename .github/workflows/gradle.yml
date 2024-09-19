@@ -24,7 +24,9 @@ jobs:
           arguments: build
       - name: Get JAR filename
         id: get-jar
-        run: echo "JAR_FILE=$(ls build/libs/*.jar)" >> $GITHUB_ENV
+        run: |
+          JAR_FILE=$(ls build/libs/*.jar)
+          echo "::set-output name=jar_file::$JAR_FILE"
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
