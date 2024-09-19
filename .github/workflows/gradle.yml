@@ -25,13 +25,16 @@ jobs:
       - name: Get JAR filename
         id: get-jar
         run: |
-          JAR_FILE=$(ls build/libs/*.jar)
-          echo "::set-output name=jar_file::$JAR_FILE"
+          # Find the JAR file in the build/libs directory and set it to the environment variable JAR_FILE
+          JAR_FILE=$(ls build/libs/*.jar | head -n 1)
+          echo "JAR_FILE=$JAR_FILE" >> $GITHUB_ENV
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
+          # Use the dynamically set environment variable JAR_FILE
           name: app
-          path: build/libs/${{ env.JAR_FILE }}
+          path: ${{ env.JAR_FILE }}
+          
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -49,15 +52,17 @@ jobs:
         run: |
           scp -i private_key.pem \
             -o StrictHostKeyChecking=no \
-            build/libs/${{ steps.get-jar.outputs.jar_file }} \
+            # Use the dynamically set environment variable JAR_FILE
+            ${{ env.JAR_FILE }} \
             ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}:/home/${{ secrets.AWS_EC2_USER }}/
       - name: Restart Spring Application on EC2
-        run: >
+        run: |
           ssh -i private_key.pem \
             -o StrictHostKeyChecking=no \
             ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} << 'EOF'
             pgrep java | xargs kill -9
-            nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/${{ env.JAR_FILE }} > app.log 2>&1 &
+            # Use the dynamically set environment variable JAR_FILE
+            nohup java -jar /home/${{ secrets.AWS_EC2_USER }}/$(basename ${{ env.JAR_FILE }}) > app.log 2>&1 &
           EOF
       - name: Cleanup
         run: rm -f private_key.pem
