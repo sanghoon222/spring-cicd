@@ -71,7 +71,7 @@ jobs:
           EOF
       - name: start new app
         run: |
-          AR_FILE=$(basename $(ls build/libs/*.jar | head -n 1))
+          JAR_FILE=$(basename $(ls build/libs/*.jar | head -n 1))
           echo "JAR_FILE to be used: $JAR_FILE" # Log the JAR_FILE value
           ssh -i private_key.pem \
             -o StrictHostKeyChecking=no \
