@@ -6,8 +6,6 @@ on:
   pull_request:
     branches:
       - main
-env:
-  JAR_FILE: spring-github-action-app-0.0.1-SNAPSHOT.jar
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,6 +22,9 @@ jobs:
         uses: gradle/gradle-build-action@v2.6.0
         with:
           arguments: build
+      - name: Get JAR filename
+        id: get-jar
+        run: echo "JAR_FILE=$(ls build/libs/*.jar)" >> $GITHUB_ENV
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
